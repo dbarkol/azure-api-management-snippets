@@ -1,0 +1,73 @@
+<!--
+    This sample demonstrates how to read cookies from an incoming
+    request. It also demonstrates how to set header values for
+    backend requests with the cookies that were retrieved.
+
+    This can be useful in scenarios where the cookie contains important
+    information that needs to be extracted and passed to another backend
+    service. 
+-->
+
+<policies>
+    <inbound>
+        <base />
+
+        <!-- 
+            Get the value from the cookie and store
+            it in a variable that will be used later.
+         -->
+        <set-variable name="jwtCookieCapture" value="@{
+
+            // Look for cookies in the request 
+            string[] value;            
+            if (context.Request.Headers.TryGetValue("Cookie", out value))
+            {                
+                if(value != null && value.Length > 0)
+                {                    
+                    // Find cookie by name
+                    var cookieName = "jwtTest";
+                    string[] cookies = value[0].Split(';');
+                    string jwt = cookies.FirstOrDefault( x => x.Contains(cookieName));
+
+                    // Adjust the starting index to include '='
+                    // and save the value (jwtCookieCapture)
+                    var startIndex =  cookieName.Length + 2;
+                    return jwt.Substring(startIndex);
+                }
+            }
+            return null;            
+        }" />
+
+        <!--             
+            This step uses the send request policy to call another service
+            and return the result. The value that was retrieved from the
+            cookie earlier is added to the header of this request.
+        -->
+        <send-request mode="new" response-variable-name="testResponse">
+            <set-url>https://httpbin.org/get</set-url>
+            <set-method>GET</set-method>
+            <set-header name="Authorization" exists-action="override">
+                <value>@{
+                    return "Bearer " + (string)context.Variables["jwtCookieCapture"];
+                }</value>
+            </set-header>
+            <set-body />
+        </send-request>
+        <return-response>
+            <set-status code="200" reason="OK" />
+            <set-body>@{
+                return ((IResponse)context.Variables["testResponse"]).Body.As<string>(preserveContent: true).ToString();                                
+            }</set-body>
+        </return-response>
+
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
