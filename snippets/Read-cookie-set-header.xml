@@ -39,8 +39,8 @@
         }" />
 
         <!--             
-            This step uses the send request policy to call another service
-            and return the result. The value that was retrieved from the
+            Use the send request policy to call another service and
+            return the result. The value that was retrieved from the
             cookie earlier is added to the header of this request.
         -->
         <send-request mode="new" response-variable-name="testResponse">
