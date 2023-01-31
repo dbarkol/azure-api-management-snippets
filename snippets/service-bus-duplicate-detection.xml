@@ -1,0 +1,64 @@
+<!--    
+    This sample provides the following examples: 
+
+    1. Publish a message to a Service Bus queue or topic with Managed Identity           
+    2. Computing a hash from the message body                                              
+    3. Setting the Message ID property of a message for duplicate detection in Service Bus 
+-->
+
+<policies>
+    <inbound>
+        <base />
+
+        <!-- Get access token using Managed Identity -->
+        <authentication-managed-identity resource="https://servicebus.azure.net" output-token-variable-name="accessToken" ignore-error="false" />
+        
+        <!-- Add the token to the header for authorization to service bus -->
+        <set-header name="Authorization" exists-action="override">
+            <value>@((string)context.Variables["accessToken"])</value>
+        </set-header>
+
+        <!-- Generate a hash of the request body -->
+        <set-variable name="hash" value="@{
+            
+            string reqData = context.Request.Body?.As<string>(true);
+            byte[] reqBytes = System.Text.Encoding.ASCII.GetBytes(reqData);
+            
+			var md5 = System.Security.Cryptography.MD5.Create();
+			byte[] hashBytes = md5.ComputeHash(reqBytes);
+			System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+            // Loop through each byte of the hashed data
+            // and format each one as a hexadecimal string.
+			for (int i = 0; i < hashBytes.Length; i++)
+			{
+				sb.Append(hashBytes[i].ToString("X2"));
+			}
+			return sb.ToString();
+        }" />
+
+        <!-- Set the Message ID property to the hash of the request body -->
+        <set-header name="BrokerProperties" exists-action="override">
+            <value>@{
+               string reqData = context.Request.Body?.As<string>(true);
+               dynamic data =  JsonConvert.DeserializeObject(reqData);
+               string messageId = (string)context.Variables["hash"];
+               return string.Format("{{\"MessageId\":\"{0}\"}}", messageId);
+            }</value>
+        </set-header>
+
+        <!-- Set the backend service to the service bus entity -->
+        <set-backend-service base-url="https://{{service-bus-namespace}}.servicebus.windows.net/" />
+        <rewrite-uri template="/{{queue||topic}}/messages" />
+
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
