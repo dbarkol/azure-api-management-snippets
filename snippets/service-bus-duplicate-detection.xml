@@ -24,17 +24,16 @@
             string reqData = context.Request.Body?.As<string>(true);
             byte[] reqBytes = System.Text.Encoding.ASCII.GetBytes(reqData);
             
-			var md5 = System.Security.Cryptography.MD5.Create();
-			byte[] hashBytes = md5.ComputeHash(reqBytes);
-			System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            var md5 = System.Security.Cryptography.MD5.Create();
+            byte[] hashBytes = md5.ComputeHash(reqBytes);
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
-            // Loop through each byte of the hashed data
-            // and format each one as a hexadecimal string.
-			for (int i = 0; i < hashBytes.Length; i++)
-			{
-				sb.Append(hashBytes[i].ToString("X2"));
-			}
-			return sb.ToString();
+            // Format to hexidemical
+            for (int i = 0; i < hashBytes.Length; i++)
+            {
+               sb.Append(hashBytes[i].ToString("X2"));
+            }
+            return sb.ToString();
         }" />
 
         <!-- Set the Message ID property to the hash of the request body -->
