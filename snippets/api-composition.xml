@@ -1,0 +1,51 @@
+<!--
+    This sample demonstrates how to make multiple calls to APIs and
+    aggregate the responsed into a single response.
+-->
+<policies>
+    <inbound>
+        <base />
+        <retry condition="@(context.Response == null || context.Response.StatusCode >= 500)" count="3" interval="10" max-interval="30" delta="1" first-fast-retry="false">
+            <send-request mode="new" response-variable-name="chuck-norris-response-career" timeout="20" ignore-error="true">
+                <set-url>https://api.chucknorris.io/jokes/random?category=career</set-url>
+                <set-method>GET</set-method>
+                <set-header name="Accept" exists-action="override">
+                    <value>application/json</value>
+                </set-header>
+            </send-request>
+        </retry>
+        <send-request mode="new" response-variable-name="chuck-norris-response-dev" timeout="20" ignore-error="true">
+            <set-url>https://api.chucknorris.io/jokes/random?category=dev</set-url>
+            <set-method>GET</set-method>
+            <set-header name="Accept" exists-action="override">
+                <value>application/json</value>
+            </set-header>
+        </send-request>
+        <return-response>
+            <set-status code="200" reason="OK" />
+            <set-header name="Content-Type" exists-action="override">
+                <value>application/json</value>
+            </set-header>
+            <set-body>@{
+                var jokes = new JArray();
+
+                var career = new JObject(new JProperty("career", ((IResponse)context.Variables["chuck-norris-response-career"]).Body.As<JObject>()));
+                var dev = new JObject(new JProperty("dev", ((IResponse)context.Variables["chuck-norris-response-dev"]).Body.As<JObject>()));
+
+                jokes.Add(career);
+                jokes.Add(dev);
+                
+                return jokes.ToString(Newtonsoft.Json.Formatting.None);  
+            }</set-body>
+        </return-response>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
