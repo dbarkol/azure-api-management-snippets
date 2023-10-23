@@ -1,0 +1,37 @@
+<!--
+    This sample demonstrates how to use Azure RBAC to authenticate to a
+    a cognitive service. 
+    
+    The policy will use the managed identity of API Management to retrieve 
+    an access token from Azure AD. The access token is then used to 
+    authenticate to the service.
+
+    For Azure OpenAI, the Cognitive Services User role is required to access 
+    the service.
+
+    For more information on built-in roles for cognitive services, see:
+    https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#cognitive-services-user    
+-->
+<policies>
+    <inbound>
+        <base />
+        
+        <authentication-managed-identity resource="https://cognitiveservices.azure.com" 
+            output-token-variable-name="msi-access-token" 
+            ignore-error="false" />
+        
+        <set-header name="Authorization" exists-action="override">
+            <value>@("Bearer " + (string)context.Variables["msi-access-token"])</value>
+        </set-header>
+
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
