@@ -1,0 +1,27 @@
+<!--
+    This sample demonstrates how to log to event hubs for 
+    requests that are routed to Azure OpenAI.
+
+    Place this snippet in the inbound section of the policy.
+-->
+<fragment>
+	<log-to-eventhub logger-id="event-hub-logger">
+     @{
+        var requestBody = context.Request.Body?.As<JObject>(true);
+
+        var deploymentId = context.Request.MatchedParameters["deployment-id"];
+
+        return new JObject(
+            new JProperty("requestUrl", context.Request.Url.ToString()),
+            new JProperty("requestId", context.RequestId),
+            new JProperty("subscriptionId", context.Subscription?.Key),
+            new JProperty("timeStamp", DateTime.UtcNow.ToString()),
+            new JProperty("ServiceName", context.Deployment.ServiceName),
+            new JProperty("RequestId", context.RequestId),
+            new JProperty("RequestIp", context.Request.IpAddress),
+            new JProperty("OperationName", context.Operation.Name),
+            new JProperty("DeploymentId", deploymentId)
+        ).ToString(); 
+     }
+ </log-to-eventhub>
+</fragment>
