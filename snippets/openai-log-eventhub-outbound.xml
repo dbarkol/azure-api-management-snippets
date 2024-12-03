@@ -5,7 +5,7 @@
     Place this snippet in the outbound section of the policy.
 -->
 <fragment>
-	<log-to-eventhub logger-id="event-hub-logger" partition-id="0">@{
+	<log-to-eventhub logger-id="event-hub-logger">@{
 
         var resp = context.Response.Body?.As<JObject>(true);
 
