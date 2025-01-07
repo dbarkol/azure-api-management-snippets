@@ -1,0 +1,61 @@
+<!--
+    This sample demonstrates how to publish an event to Event Grid.
+-->
+<policies>
+    <inbound>
+        <base />
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+        <authentication-managed-identity resource="https://eventgrid.azure.net" output-token-variable-name="eventGridAccessToken" ignore-error="false" />
+        <send-request mode="new" response-variable-name="eventGridResponse" ignore-error="true">
+            <set-url>{{event-grid-topic-endpoint}}</set-url>
+            <set-method>POST</set-method>
+            <set-header name="Authorization" exists-action="override">
+                <value>@{ return "Bearer " +  context.Variables["eventGridAccessToken"]; }</value>
+            </set-header>
+            <set-header name="Content-Type" exists-action="override">
+                <value>application/json</value>
+            </set-header>
+            <set-body>@{      
+
+                // Parse the request body
+                var requestBody = context.Request.Body.As<string>();
+                JObject json = JObject.Parse(requestBody);
+                
+                // Add the customer ID, order details and
+                // request ID of the API call to the event
+                // data property.
+                var data = new JObject();                                                
+                data["customerId"] = json["customerId"];
+                data["requestId"] = context.RequestId;
+
+                // Set the event type based off of the quantity ordered
+                var quantity = (int) json["quantity"];
+                var eventType = quantity > 50 ? "Contoso.Orders.Large" : "Contoso.Orders.Normal";
+
+                // Events are sent in an array
+                var events = new JArray();
+
+                // Initialize the event and add it to the array
+                var newOrderEvent = new JObject();
+                newOrderEvent.Add("Data", data);
+                newOrderEvent.Add("Subject", "contoso/newOrder");
+                newOrderEvent.Add("EventType", eventType);
+                newOrderEvent.Add("Id", Guid.NewGuid().ToString());
+                newOrderEvent.Add("EventTime", DateTime.UtcNow.ToString());
+                events.Add(newOrderEvent);
+
+                // Format to a string and ready to go!
+                return events.ToString(Newtonsoft.Json.Formatting.None);   
+                             
+            }</set-body>
+        </send-request>        
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
