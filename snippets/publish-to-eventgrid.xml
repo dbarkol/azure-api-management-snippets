@@ -4,13 +4,14 @@
 <policies>
     <inbound>
         <base />
+        <authentication-managed-identity resource="https://eventgrid.azure.net" output-token-variable-name="eventGridAccessToken" ignore-error="false" />
     </inbound>
     <backend>
         <base />
     </backend>
     <outbound>
         <base />
-        <authentication-managed-identity resource="https://eventgrid.azure.net" output-token-variable-name="eventGridAccessToken" ignore-error="false" />
+        
         <send-request mode="new" response-variable-name="eventGridResponse" ignore-error="true">
             <set-url>{{event-grid-topic-endpoint}}</set-url>
             <set-method>POST</set-method>
@@ -56,6 +57,6 @@
         </send-request>        
     </outbound>
     <on-error>
-        <base />
+        <base />        
     </on-error>
 </policies>
